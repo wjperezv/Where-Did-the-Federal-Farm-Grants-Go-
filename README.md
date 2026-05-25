@@ -1,0 +1,187 @@
+[usda_map_green_final.html](https://github.com/user-attachments/files/28203744/usda_map_green_final.html)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USDA ILCMA Projects Map — Green</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #F5FAF6; color: #000; }
+  .metric-cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:1rem; }
+  .card { background:#E0EFE4; border-radius:8px; padding:0.75rem 1rem; flex:1; min-width:100px; border:0.5px solid #5FAF7A; }
+  .card-label { font-size:12px; color:#1A5C35; margin-bottom:4px; font-weight:500; }
+  .card-value { font-size:24px; font-weight:500; color:#1A5C35; }
+  .card-value.sm { font-size:15px; }
+  .legend { display:flex; gap:6px; align-items:center; margin-bottom:6px; font-size:12px; color:#7AAF8A; }
+  .legend-swatch { width:18px; height:10px; border-radius:2px; }
+  #tooltip { display:none; margin-top:4px; padding:5px 10px; background:#E0EFE4; border:0.5px solid #5FAF7A; border-radius:6px; font-size:13px; color:#1A5C35; }
+  #panel { display:none; margin-top:1rem; border:0.5px solid #5FAF7A; border-radius:10px; overflow:hidden; }
+  .panel-header { padding:0.75rem 1rem; background:#E0EFE4; border-bottom:0.5px solid #5FAF7A; }
+  .panel-item { padding:0.75rem 1rem; border-bottom:0.5px solid #E0EFE4; }
+  .panel-item:last-child { border-bottom:none; }
+  .panel-title { font-weight:500; font-size:13px; color:#1A5C35; margin-bottom:2px; }
+  .panel-sub { font-size:12px; color:#2E8B52; margin-bottom:4px; }
+  .panel-summary { font-size:12px; color:#7AAF8A; line-height:1.5; }
+  #note { margin-top:1rem; font-size:11px; color:#7AAF8A; line-height:1.6; border-top:0.5px solid #5FAF7A; padding-top:0.75rem; }
+</style>
+</head>
+<body>
+
+<h2 style="font-size:20px;font-weight:700;margin:0 0 0.4rem;color:#1A5C35;letter-spacing:-0.01em;line-height:1.3;">Where Did the Federal Farm Grants Go?</h2>
+<p style="font-size:13px;color:#2E8B52;margin:0 0 1.2rem;line-height:1.6;max-width:700px;">The USDA awarded funding to 46 organizations across the country to expand land, capital and market access for underserved and low-income farmers and ranchers. Click any state to explore the projects in your area.</p>
+
+<div class="metric-cards">
+  <div class="card"><div class="card-label">State/territory projects</div><div class="card-value">46</div></div>
+  <div class="card"><div class="card-label">States covered</div><div class="card-value" id="stateCount">—</div></div>
+  <div class="card" style="flex:2;min-width:160px;"><div class="card-label">Selected</div><div class="card-value sm" id="selectedState">Click a state to explore</div></div>
+</div>
+
+<div class="legend">
+  <span>Fewer projects</span>
+  <div class="legend-swatch" style="background:#A8D4B8;"></div>
+  <div class="legend-swatch" style="background:#6DBF8A;"></div>
+  <div class="legend-swatch" style="background:#3A9E60;"></div>
+  <div class="legend-swatch" style="background:#1F7042;"></div>
+  <div class="legend-swatch" style="background:#0F4526;"></div>
+  <span>More projects</span>
+</div>
+
+<div id="map" style="width:100%;cursor:pointer;"></div>
+<div id="tooltip"></div>
+<div id="panel"></div>
+
+<div id="note"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+const projects = [
+  {name:"2020 Farmers Cooperative Land Access and Farm Academy Program",applicant:"2020 Farmers Cooperative",states:["GA","IL","IN","MD","MI","NC","SC"],audience:"Black and Brown Farmers",summary:"Supports historically underserved farmers via microgrants, a re-lending program, USDA program support, and hands-on training for 1,688 farmers across 10 states."},
+  {name:"AIMI Restoring Resilience in Indigenous and Land Based Communities",applicant:"American Indian Mothers (AIM), Inc.",states:["NC","SC","VA","GA"],audience:"Tribal Farmers",summary:"Forms Indigenous Farming Cooperatives and provides land access, educational mentorship, and technical assistance to Indigenous farmers in four target areas."},
+  {name:"Black Belt Land Access Program",applicant:"Center For Heirs Property Preservation",states:["AL","TX","MS","AR"],audience:"BIPOC",summary:"Increases land access for underserved landowners and builds infrastructure in East Texas, Arkansas, and Mississippi to address Heirs Property among Black producers."},
+  {name:"Black Farmer Capital, Land, and Market Access Plan",applicant:"Black Oregon Land Trust",states:["OR"],audience:"Black farmers",summary:"Provides secure, affordable land access using a community trust model and increases market access for Black farmers in Oregon."},
+  {name:"Catalyzing Equitable Access to Land, Capital, and Market Opportunities",applicant:"Agroecology Commons",states:["CA"],audience:"QTBIMPOC Producers",summary:"Develops innovative solutions for QTBIMPOC producers in California's Bay Area through land access policy education and collaboration with the California Alliance of Family Farms."},
+  {name:"Chippewa Cree Tribe Land Access Grant Program",applicant:"Chippewa Cree Tribe Of The Rocky Boy Reservation",states:["MT"],audience:"Tribal Farmers and Producers",summary:"Acquires ~3,000 acres for tribal members and provides 500 hours of technical assistance to 20 beginning tribal farmers and producers."},
+  {name:"Creating a Mid-Atlantic LAMP Program",applicant:"Ourspace World, Inc.",states:["MD","VA"],audience:"Black Farmers",summary:"Targets small-scale specialty crop farmers of the Black Diaspora in the Mid-Atlantic Region to develop a replicable Land-Access-to-Market Pipeline model."},
+  {name:"Creating a Pathway to Land Ownership for Immigrants, Refugees, and Underserved Farmers",applicant:"World Farmers Inc.",states:["ME","MA","NY","FL"],audience:"Immigrants, Refugees, and Underserved Farmers",summary:"Increases farmland ownership for underserved farmers using USDA-FSA loans and project-funded programs to transition open land into viable farmland."},
+  {name:"Decolonizing Iowa's Land Wealth",applicant:"Sustainable Iowa Land Trust",states:["IA"],audience:"BIPOC, Latinx, immigrant, refugee, and underrepresented individuals",summary:"Serves underrepresented farmers in Des Moines, Waterloo, and Cedar Rapids by helping navigate financial assistance programs and tackling high land costs."},
+  {name:"Development of Long-Term Agricultural Lease Agreements on Publicly Owned Land",applicant:"Alameda County RCD",states:["CA"],audience:"BIPOC and underserved urban farmers",summary:"Puts public land into 5-10 year agricultural leases in Alameda County, creating jobs, increasing food security, and streamlining equitable leasing."},
+  {name:"East Multnomah County Immigrant & Refugee Farmland Access Project",applicant:"Community Development Corporation Of Oregon",states:["OR"],audience:"Disadvantaged refugee and immigrant beginning farmers",summary:"Provides long-term land access to refugee and immigrant farmers in east Multnomah & Clackamas counties by purchasing an 18.5-acre farm and establishing a cooperative ownership model."},
+  {name:"Farmworkers to Farm Stewards: Community Milpa Land Project",applicant:"Community Agroecology Network",states:["CA"],audience:"Latinx, Indigenous",summary:"Secures long-term farmland for campesino families and pilots an innovative financial ecosystem for ~140 Latinx and Indigenous farmworkers."},
+  {name:"Filling the Gaps in Access to Land and Capital for Kansas City-area Urban Farmers",applicant:"Cultivate Kansas City Inc.",states:["MO","KS"],audience:"Refugees and Black Urban Growers",summary:"Improves access to affordable farmland and removes barriers to grant and loan programs for urban farmers in the Kansas City metro area."},
+  {name:"For Us, By Us: Land Access and Non-Extractive Capital Practices",applicant:"African Alliance of Rhode Island (AARI)",states:["RI","CT","MA"],audience:"Black, Latinx, Asian, Indigenous farmers and People of Color",summary:"Increases farmland ownership through training, capacity-building, and new financing resources for BIPOC farmers in Connecticut, Massachusetts, and Rhode Island."},
+  {name:"From Surviving to Thriving",applicant:"Grow Food",states:["WA"],audience:"Historically Underserved Farmers",summary:"Deploys creative and blended capital arrangements to move Historically Underserved Farmers from the edge of viability to long-term resilience."},
+  {name:"Gaining New Ground",applicant:"Rural Advancement Foundation International-USA",states:["NC","FL"],audience:"BIPOC Farmers",summary:"Improves land access and security for underserved farmers of color in North Carolina, Florida, Puerto Rico and the U.S. Virgin Islands through outreach, technical assistance, and land trust development."},
+  {name:"Increasing Access for Underserved Farmers in Maine",applicant:"Maine Farmland Trust",states:["ME"],audience:"Low income farmers (preference for BIPOC and New Americans)",summary:"Secures long-term land tenancy for 3-4 underserved farm families and provides low-interest capital, farm upgrades, and technical assistance."},
+  {name:"Increasing Land and Capital Access for the Mountain Plains Region's Tribal Areas",applicant:"Four Bands Community Fund Inc.",states:["ND","SD","MT","WY"],audience:"Tribal Farmers",summary:"Serves tribal areas in ND, SD, MT, and WY with 500 hours of technical assistance and $6.6M in lending capital for 25+ tribal agricultural producers."},
+  {name:"Increasing Land, Capital, and Market Access for Marginalized Farmers",applicant:"Khuba International",states:["NY"],audience:"BIPOC growers and farmers",summary:"Supports BIPOC farmers through the Quarter Acre for the People program, developing 12 BIPOC-owned farm businesses and supporting farmland purchase and cooperative governance."},
+  {name:"Increasing Land, Capital, and Market Access Program in the Great Lakes Region",applicant:"Menominee Indian Tribe Of Wisconsin",states:["WI"],audience:"Tribal Farmers",summary:"Expands intertribal food system serving Wisconsin tribes, establishes a $3M Equity Capital Fund, and provides technical assistance for tribal producers."},
+  {name:"Increasing Secure Land Tenure and Farm Viability in Connecticut",applicant:"Connecticut Department of Agriculture",states:["CT"],audience:"BIPOC emerging farmers",summary:"Supports land access and secure tenure for BIPOC farmers in Connecticut through equitable leasing or direct land acquisition."},
+  {name:"Innovative Strategies for Securing BIPOC Farmland Access in the Upper Midwest",applicant:"University Of Wisconsin System",states:["IL","MN","WI","ND"],audience:"BIPOC Farmers",summary:"Combines capital source innovation with community-specific technical assistance to help disadvantaged farmers become landowners in the Upper Midwest."},
+  {name:"Ka Mea Kanu",applicant:"Pacific Gateway Center",states:["HI"],audience:"Immigrant, Refugee, Survivors of Human Trafficking, Underserved Minority Producers",summary:"Improves farmland productivity and business viability in Hawai'i through matchmaking between producers and landowners, capital sources, and markets."},
+  {name:"King County Farmland Access Program",applicant:"County Of King",states:["WA"],audience:"BIPOC and other historically underserved farmers",summary:"Supports establishment and expansion of farms by new, BIPOC, and historically underserved farmers in King County, WA, using alternative land tenure models."},
+  {name:"Leveraging a Latino-led CDFI to provide Capital, Market, and Land Access",applicant:"Latin Economic Development Center",states:["MN"],audience:"Latino & Underserved Farmers",summary:"Partners a Latino-led CDFI with Land Stewardship Project, The Good Acre, and The Conservation Fund to provide capital and land pathways for underserved farmers in Minnesota."},
+  {name:"Local Food Economy Lab Land Access Initiative",applicant:"San Diego Food System Alliance",states:["CA"],audience:"Underserved BIPOC communities, immigrants, women, LGBTQ+, seniors, low-income individuals",summary:"Expands technical assistance and connects underserved producers with capital and markets in San Diego County through a three-pronged public land strategy."},
+  {name:"Lower Brule Sioux Tribe Project",applicant:"Lower Brule Sioux Tribe",states:["SD"],audience:"Lower Brule Sioux Tribe and tribal members",summary:"Restores tribal ownership of lands within the Lower Brule Indian Reservation and provides technical assistance on land succession, estate planning, and agricultural business planning."},
+  {name:"Modifying and Implementing Tribal Land Enterprise Models",applicant:"Indian Land Tenure Foundation",states:["OR"],audience:"Tribal Farmers",summary:"Adapts the Rosebud Sioux Tribe's Tribal Land Enterprise model for the Umatilla Indian Reservation and expands it to other Columbia River Basin reservations."},
+  {name:"Moving Farmers from Surviving to Thriving in Miami-Dade County",applicant:"Urban Oasis Project, Inc.",states:["FL"],audience:"BIPOC, LGBTQ+",summary:"Creates an agricultural center in Miami-Dade County offering long-term land leases, shared infrastructure, and business and agricultural training."},
+  {name:"New Jersey Equitable Foodshed and Cooperative Markets Program",applicant:"Foodshed Alliance",states:["NJ"],audience:"Black, Hispanic, Latino, Spanish Origin",summary:"Helps underserved farmers in NJ access land, long-term leases on preserved farmland, food hub distribution, and technical assistance for equitable USDA participation."},
+  {name:"NJ Wildlife Management Area Land Access",applicant:"Northeast Organic Farming Association of New Jersey",states:["NJ"],audience:"Black, Hispanic, Latino, Asian",summary:"Transitions 500 acres of NJ Wildlife Management Area land to organic practices and provides land access and technical assistance to historically underserved producers."},
+  {name:"Painted Desert Program",applicant:"Southwest Indian Agricultural Association, Inc.",states:["AZ"],audience:"Native American and Veteran farmers/ranchers",summary:"Delivers wraparound outreach and technical assistance for Native American and Veteran farmers and ranchers in Arizona to increase access to land, capital, and markets."},
+  {name:"Pine Creek Ranch Land and Water Conservation Project",applicant:"NDN Collective, Inc.",states:["NV"],audience:"Tribal Farmers",summary:"Develops Pine Creek Ranch in southern Nevada for long-term Indigenous-led ranching."},
+  {name:"Reclaiming the Heritage of Farming for the Underserved",applicant:"Kansas Black Farmers Association Inc.",states:["KS","OK","NE","TX","MO"],audience:"BIPOC farmers and ranchers",summary:"Addresses capital, market, and land access for BIPOC producers in KS, OK, NE, TX, and MO through technical services, capital assistance, education, and cooperative programs."},
+  {name:"Regional Collaboration to Facilitate Equitable Access in the Deep South",applicant:"Alabama A&M University",states:["MS","TN","AL"],audience:"Farmers of color",summary:"Delivers technical assistance to grow the number of farmers of color by at least 25% across targeted counties in Mississippi, Tennessee, and Alabama."},
+  {name:"Regional Implementation of Veteran and Small Farm Incubator Clusters",applicant:"North South Institute, Inc.",states:["FL","GA","AL","SC"],audience:"Small Farmers, Veterans, Women",summary:"Develops seven Socially Disadvantaged Small Farm and Veteran Incubator Clusters in FL, southeast AL-SW GA, and the Gullah Geechee Corridor."},
+  {name:"St. Louis Urban Farmers Collective",applicant:"Heru Urban Farming And Garden",states:["MO","IL"],audience:"Black, Latinx, Asian, Multi-Racial",summary:"Mobilizes a diverse collective of St. Louis urban farmers to address barriers in locally sourced production and promote cooperative land ownership."},
+  {name:"Texas Victory Farms",applicant:"H.O.P.E For Small Farm Sustainability",states:["TX"],audience:"BIPOC farmers, including refugees and asylum seekers",summary:"Provides beginning BIPOC farmers with starter plots, peer-to-peer training, and up to three years of free land access to build skills and qualify for FSA loans."},
+  {name:"The CLIMB Project",applicant:"Asian Business Institute and Resource Center",states:["CA"],audience:"Southeast Asian Farmers",summary:"Combats barriers for 80 Southeast Asian farmers in Fresno County, Calif., through networking, farmers markets, down payment assistance, business education, and USDA workshops."},
+  {name:"The Detroit Farmer Collective",applicant:"Workin Rootz",states:["MI"],audience:"Black and Brown Urban Farmers",summary:"Increases land and capacity at five Detroit urban farms and expands access through a Grower Mini-Grant Program and shared infrastructure hubs."},
+  {name:"The George Washington Carver Project for Equity and Access",applicant:"Arthur Morgan Institute DBA The Agraria Center",states:["OH"],audience:"BIPOC, underserved and regenerative farmers",summary:"Improves livelihoods for BIPOC farmers in the Dayton, Springfield, Yellow Springs, and Wilmington, Ohio, areas."},
+  {name:"The New Century Farm",applicant:"Iowa Valley RC&D",states:["IA"],audience:"BIPOC Beginning Farmers",summary:"Expands land and market access for beginning and underserved farmers at the Johnson County Historic Poor Farm in eastern Iowa."},
+  {name:"The New Golden Triangle",applicant:"Piikanii Lodge Health Institute",states:["MT","SD","ND","MN"],audience:"Tribal Farmers",summary:"Enables Upper Great Plains tribes' agricultural communities toward sustainable pathways through education, innovative technologies, and collaborative partnerships."},
+  {name:"TLA Beginning Rancher Prosperity Project",applicant:"Tallgrass Legacy Alliance, Inc.",states:["KS"],audience:"Beginning and underserved ranchers",summary:"Connects beginning ranchers to land via Kansas State University's Land Link program, and provides down payment assistance, business planning, and market exposure through ranch tours."},
+  {name:"Walnut and Daisy Community Micro-Farm",applicant:"Thrive Santa Ana, Inc.",states:["CA"],audience:"Black, Latinx",summary:"Provides land for local farmers in Santa Ana, Calif., to expand markets by growing healthy food and partnering with worker cooperatives for value-added products."},
+  {name:"Working Lands of Central Appalachia",applicant:"West Virginia University",states:["WV","PA","MD","VA","NC"],audience:"Underserved Veteran, Limited resource, beginning, and socially disadvantaged farmers",summary:"Increases land, market, and capital access in Central Appalachia through land audits, a West Virginia Farm Link program, and anchor collaboratives of universities and health care systems."}
+];
+
+const stateCounts = {}, stateProjects = {};
+projects.forEach(p => p.states.forEach(s => {
+  stateCounts[s] = (stateCounts[s]||0)+1;
+  if (!stateProjects[s]) stateProjects[s] = [];
+  stateProjects[s].push(p);
+}));
+document.getElementById('stateCount').textContent = Object.keys(stateCounts).length;
+
+const nameToAbbr = {
+  "Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO",
+  "Connecticut":"CT","Delaware":"DE","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID",
+  "Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA",
+  "Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN",
+  "Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV",
+  "New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC",
+  "North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA",
+  "Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX",
+  "Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV",
+  "Wisconsin":"WI","Wyoming":"WY"
+};
+
+function showPanel(abbr, name) {
+  const ps = stateProjects[abbr]||[];
+  document.getElementById('selectedState').textContent = ps.length ? `${name} (${ps.length} project${ps.length!==1?'s':''})` : name;
+  const panel = document.getElementById('panel');
+  panel.style.display = 'block';
+  if (!ps.length) { panel.innerHTML=`<div style="padding:1rem;font-size:14px;color:#A5A5A5;">No projects in ${name}.</div>`; return; }
+  panel.innerHTML = `
+    <div class="panel-header"><span style="font-weight:500;font-size:14px;">${name}</span> <span style="font-size:12px;color:#2E6B43;">${ps.length} project${ps.length!==1?'s':''}</span></div>
+    ${ps.map(p=>`<div class="panel-item">
+      <div class="panel-title">${p.name}</div>
+      <div class="panel-sub">${p.applicant} · <em>${p.audience}</em></div>
+      <div class="panel-summary">${p.summary}</div>
+    </div>`).join('')}`;
+}
+
+d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us => {
+  const max = Math.max(...Object.values(stateCounts));
+  const clr = d3.scaleQuantize([0,max], ['#A8D4B8','#6DBF8A','#3A9E60','#1F7042','#0F4526']);
+  const noData = '#E8F3EC';
+  const strokeColor = '#FFFFFF';
+  const strokeSel = '#0F4526';
+
+  const svg = d3.select('#map').append('svg')
+    .attr('viewBox','0 0 975 580').attr('width','100%');
+
+  const path = d3.geoPath(d3.geoAlbersUsa().scale(1300).translate([487.5,305]));
+  let selEl = null;
+
+  function pick(el, abbr, name) {
+    if (selEl) d3.select(selEl).attr('stroke-width',0.5).attr('stroke',strokeColor);
+    d3.select(el).attr('stroke',strokeSel).attr('stroke-width',2);
+    selEl = el;
+    showPanel(abbr, name);
+  }
+
+  svg.selectAll('path.s')
+    .data(topojson.feature(us, us.objects.states).features)
+    .join('path').attr('class','s')
+    .attr('d', path)
+    .attr('stroke', strokeColor).attr('stroke-width', 0.5)
+    .attr('fill', d => { const a=nameToAbbr[d.properties.name]; return a&&stateCounts[a] ? clr(stateCounts[a]) : noData; })
+    .on('mouseover', function(e,d) {
+      d3.select(this).attr('opacity',0.8);
+      const a=nameToAbbr[d.properties.name]; const c=a?(stateCounts[a]||0):0;
+      const tt=document.getElementById('tooltip'); tt.style.display='block';
+      tt.textContent = c ? `${d.properties.name}: ${c} project${c!==1?'s':''}` : `${d.properties.name}: no projects`;
+    })
+    .on('mouseout', function() { d3.select(this).attr('opacity',1); document.getElementById('tooltip').style.display='none'; })
+    .on('click', function(e,d) { const a=nameToAbbr[d.properties.name]; if(a) pick(this,a,d.properties.name); });
+
+  document.getElementById('note').innerHTML = `Agrarian Land Trust, Intertribal Agriculture Council, American Farmland Trust, and Trust for Public Land are not included in the map, as their projects are intended to operate across the country. Rural Advancement Foundation International-USA has a grant in Puerto Rico and the U.S. Virgin Islands.`;
+});
+</script>
+
+<div style="margin-top:1.5rem;padding-top:0.75rem;border-top:0.5px solid #5FAF7A;">
+  <div style="font-size:12px;font-weight:600;color:#1A5C35;margin-bottom:3px;">By Wesley J. Pérez Vidal</div>
+  <div style="font-size:11px;color:#7AAF8A;">Source: U.S. Department of Agriculture, Farm Service Agency</div>
+</div>
+</body>
+</html>
